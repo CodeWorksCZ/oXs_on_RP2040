@@ -235,7 +235,7 @@ void setupI2c(){
     if ( gpio_get(config.pinSda) == 0) printf("I2C still locked\n");    
     */
     // initialize I2C     
-    i2c_init( i2c1, 400 * 1000);
+    i2c_init( i2c1, 100 * 1000);
     gpio_set_function(config.pinSda, GPIO_FUNC_I2C);
     gpio_set_function(config.pinScl, GPIO_FUNC_I2C);
     gpio_pull_up(config.pinSda);

@@ -1,9 +1,9 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "3.0.11"
+#define VERSION "3.0.11.1"
 
-#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
+//#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
 // Here some additional parameters that can't be changed via the serial terminal 
 
@@ -193,10 +193,10 @@
 
 // --------- Parameters for Temperature(s) when measured by a thermistor ---------------
 // uncomment the next line when a thermistor is used instead of a TP36 ic and then specify the pull up resitor and the NTC param
-//#define RESISTOR_FOR_TEMPERATURE 4700      // resistance connected to 3.3V Vcc (in Ohm); other pin is connected to thermistor and analog pin
-#define STEINHART_A 7.00111E-4   // these parameters are specific to the NTC being used.(here e.g. for a 100k thermistor for 3D printer)
-#define STEINHART_B 2.1644E-4
-#define STEINHART_C 1.0619E-07
+//#define RESISTOR_FOR_TEMPERATURE 10000      // resistance connected to 3.3V Vcc (in Ohm); other pin is connected to thermistor and analog pin
+#define STEINHART_A 1.129241E-03   // these parameters are specific to the NTC being used.(here e.g. for a 100k thermistor for 3D printer)
+#define STEINHART_B 2.341077E-04
+#define STEINHART_C 8.775468E-08
 
 
 // --------- Parameters for GPS ---------------

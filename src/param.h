@@ -215,5 +215,6 @@ void printDebugFlags();
 enum DEBUG_LIST : uint8_t {
     DEBUG_LORA,
     DEBUG_ESC,
+    DEBUG_XGZP,
     DEBUG_MAX_NUMBER,
     };

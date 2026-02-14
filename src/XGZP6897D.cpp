@@ -10,6 +10,7 @@
 #include "config.h"
 
 extern CONFIG config;
+extern uint32_t debugFlags;
 extern float actualPressurePa ; // this value is updated when baro1,2 or 3 is installed
 extern float difPressureAirspeedSumPa; // calculate a moving average on x values
 extern uint32_t difPressureAirspeedCount;
@@ -86,7 +87,7 @@ void XGZP::getDifPressure() {
         difPressurePa = (((float) difPressureAdc) - offset) / XGZP_K_FACTOR ;
         difPressureAirspeedSumPa += difPressurePa; // calculate a moving average on x values
         difPressureAirspeedCount++;                // count the number of conversion
-        if (msgEverySec(1)) {
+        if ((debugFlags & (1 << DEBUG_XGZP)) && msgEverySec(1)) {
             printf("rawPres=%i  sumPa=%f  count=%i\n", difPressureAdc, difPressureAirspeedSumPa , difPressureAirspeedCount) ;
         }
         difPressureCompVspeedSumPa += difPressurePa; // calculate a moving average on x values

@@ -130,7 +130,7 @@ extern uint8_t loraState;
 
 //list of names when we print debugmsg list
 const char* debugMsg[DEBUG_MAX_NUMBER] = {\
-    "LOCATOR", "ESC"};
+    "LOCATOR", "ESC", "XGZP"};
 
 //enum DEBUG_LIST : uint8_t {
 //    DEBUG_LORA,
@@ -1403,6 +1403,10 @@ int8_t handleOneCmd( char * bufferPos){ // handle one command with buffer starti
             printDebugHelp();             
         } else if (strcmp("LOCATOR", pvalue) == 0) {
             debugFlags |= 1 << DEBUG_LORA ;
+        } else if (strcmp("ESC", pvalue) == 0) {
+            debugFlags |= 1 << DEBUG_ESC ;
+        } else if (strcmp("XGZP", pvalue) == 0) {
+            debugFlags |= 1 << DEBUG_XGZP ;
         } else {
             printf("Invalid parameter for DEBUG command");
             return -1;
@@ -1418,7 +1422,7 @@ int8_t handleOneCmd( char * bufferPos){ // handle one command with buffer starti
 
 void printDebugHelp(){
     printf("Enter commands with DEBUG=XXXX where XXXX is:\n");
-    printf("LOCATOR, ESC\n");
+    printf("LOCATOR, ESC, XGZP\n");
 }
 
 void printDebugFlags(){
@@ -1913,7 +1917,15 @@ void printConfigAndSequencers(){   // print all and perform checks
 } // end printConfigAndSequencers()
 
 
-#define FLASH_CONFIG_OFFSET (256 * 1024)
+// Persistent data (config/sequencer/gyro mixer) must live at the end of flash.
+// Firmware image size can exceed 256 KB, so fixed low offsets may overlap code
+// and get corrupted after SAVE.
+#ifndef PICO_FLASH_SIZE_BYTES
+#define PICO_FLASH_SIZE_BYTES (2 * 1024 * 1024u)
+#endif
+
+// Keep persistent data in the last 3 flash sectors to avoid overlap with firmware image.
+#define FLASH_CONFIG_OFFSET (PICO_FLASH_SIZE_BYTES - (3 * FLASH_SECTOR_SIZE))
 const uint8_t *flash_target_contents = (const uint8_t *) (XIP_BASE + FLASH_CONFIG_OFFSET);
 
 void saveConfig() {
@@ -2356,7 +2368,7 @@ the function read from a pointer up to a '0'(or the number of item) and return t
 
 */
 
-#define FLASH_SEQUENCER_OFFSET FLASH_CONFIG_OFFSET + (4 * 1024) // Sequencer is 4K after config parameters
+#define FLASH_SEQUENCER_OFFSET (FLASH_CONFIG_OFFSET + FLASH_SECTOR_SIZE) // next 4K sector after config
 const uint8_t *flash_sequencer_contents = (const uint8_t *) (XIP_BASE + FLASH_SEQUENCER_OFFSET);
 
 uint8_t seqIdx = 0;        // count the sequencer
@@ -2876,7 +2888,7 @@ void printGyroMixer(){     // this function is also called at the end of the gyr
     }
 }
 
-#define FLASH_GYROMIXER_OFFSET FLASH_CONFIG_OFFSET + (8 * 1024) // Sequencer is 4K after config parameters
+#define FLASH_GYROMIXER_OFFSET (FLASH_SEQUENCER_OFFSET + FLASH_SECTOR_SIZE) // next 4K sector after sequencer
 const uint8_t *flash_gyroMixer_contents = (const uint8_t *) (XIP_BASE + FLASH_GYROMIXER_OFFSET);
 
 void saveGyroMixer() {
