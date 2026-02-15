@@ -180,14 +180,21 @@ void calculateAirspeed(){
         rawAirspeedPa = 2396 *  sqrt( difPressureAvg * temperatureKelvin / (float) actualPressurePa );
     }
     #define EXPOSMOOTH_AIRSPEED_FACTOR 0.1
+    #define AIRSPEED_DEADBAND_CMS 200.0f // clamp small residual offset/noise around zero
     smoothAirspeedCmS += ( EXPOSMOOTH_AIRSPEED_FACTOR * ( rawAirspeedPa - smoothAirspeedCmS )) ; 
     // publish the new value every 200 ms
     if ( (millisRp() - prevAirspeedAvailableMs) > 200) { // make the new value available once per 200 msec
         //printf("difP= %f tmp=%f p=%f rs=%f  ss=%f\n" , (float) difPressureAvg , (float)  temperatureKelvin ,
         //     (float) actualPressurePa , (float) rawAirspeedPa , (float) smoothAirspeedCmS *0.036 );
         prevAirspeedAvailableMs = millisRp();
-        //if ( smoothAirSpeedCmS >  0) {  // normally send only if positive and greater than 300 cm/sec , otherwise send 0 but for test we keep all values to check for drift  
-        sent2Core0(AIRSPEED, (int32_t) smoothAirspeedCmS);     
+        int32_t airspeedOut = (int32_t) smoothAirspeedCmS;
+        if (fabsf(smoothAirspeedCmS) < AIRSPEED_DEADBAND_CMS) {
+            airspeedOut = 0;
+        }
+        if (airspeedOut < 0) {
+            airspeedOut = 0;
+        }
+        sent2Core0(AIRSPEED, airspeedOut);
     }
 } 
 // check if offset must be reset

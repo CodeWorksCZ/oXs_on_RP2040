@@ -88,7 +88,13 @@ void XGZP::getDifPressure() {
         difPressureAirspeedSumPa += difPressurePa; // calculate a moving average on x values
         difPressureAirspeedCount++;                // count the number of conversion
         if ((debugFlags & (1 << DEBUG_XGZP)) && msgEverySec(1)) {
-            printf("rawPres=%i  sumPa=%f  count=%i\n", difPressureAdc, difPressureAirspeedSumPa , difPressureAirspeedCount) ;
+            float debugAirspeedCmS = 0.0f;
+            if (actualPressurePa > 1000.0f) {
+                float speedAbs = 2396.0f * sqrtf(fabsf(difPressurePa) * temperatureKelvin / actualPressurePa);
+                debugAirspeedCmS = (difPressurePa < 0.0f) ? -speedAbs : speedAbs;
+            }
+            printf("rawPres=%i  pa=%f  speed=%d cm/s  sumPa=%f  count=%i\n",
+                difPressureAdc, difPressurePa, (int)debugAirspeedCmS, difPressureAirspeedSumPa, difPressureAirspeedCount);
         }
         difPressureCompVspeedSumPa += difPressurePa; // calculate a moving average on x values
         difPressureCompVspeedCount++;                // count the number of conversion
