@@ -202,8 +202,8 @@ extern bool calibrateImuGyro ; // recalibrate the gyro or not at reset (avoid it
 
 void setupI2c(){
     if ( config.pinScl == 255 || config.pinSda == 255) return; // skip if pins are not defined
-    // send 10 SCL clock to force sensor to release sda
-    /*
+    // Try to recover a stuck I2C bus after reset by toggling SCL and issuing a STOP.
+    // This helps when a sensor keeps SDA low if MCU reset occurs mid-transaction.
     gpio_init(config.pinSda);
     gpio_init(config.pinScl);
     gpio_set_dir(config.pinSda, GPIO_IN);
@@ -211,16 +211,15 @@ void setupI2c(){
     gpio_pull_up(config.pinSda);
     gpio_pull_up(config.pinScl);
     sleep_us(10);
-    while ( gpio_get(config.pinSda) == 0) {;
-        
+    if (gpio_get(config.pinSda) == 0) {
         for (uint8_t i=0; i<9; i++){
             gpio_put(config.pinScl, 1);
             sleep_us(10);
             gpio_put(config.pinScl, 0);
             sleep_us(10);
-            printf("trying to unlock I2C\n");
+            watchdog_update();
         }
-    }    
+    }
     gpio_put(config.pinScl, 1);
     gpio_set_dir(config.pinSda, GPIO_OUT);
     gpio_put(config.pinScl, 0);
@@ -232,8 +231,9 @@ void setupI2c(){
     gpio_put(config.pinSda, 1);
     sleep_us(10);
     gpio_set_dir(config.pinSda, GPIO_IN);
-    if ( gpio_get(config.pinSda) == 0) printf("I2C still locked\n");    
-    */
+    if (gpio_get(config.pinSda) == 0) {
+        printf("I2C still locked after recovery attempt\n");
+    }
     // initialize I2C     
     i2c_init( i2c1, 100 * 1000);
     gpio_set_function(config.pinSda, GPIO_FUNC_I2C);

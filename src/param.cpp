@@ -879,7 +879,7 @@ int8_t handleOneCmd( char * bufferPos){ // handle one command with buffer starti
         ui = strtoul(pvalue, &ptr, 10);
         if ( *ptr != 0x0){
             printf("Error : channel must be an unsigned integer\n");
-        } else if ( !(ui >= 1 or ui <= 16 or ui ==255)) {
+        } else if (!((ui >= 1 && ui <= 16) || ui == 255)) {
             printf("Error : channel must be 1...16 or 255");
         } else {    
             config.VspeedCompChannel = ui;
@@ -1569,7 +1569,7 @@ void checkConfigAndSequencers(){     // set configIsValid
         printf("Error in parameters: For Spektrum SRXL2, TLM pin may not be defined (but PRI must be defined)\n");
         configIsValid=false;
     }
-    if (!( config.VspeedCompChannel >= 1 or config.VspeedCompChannel <= 16 or config.VspeedCompChannel ==255)){
+    if (!((config.VspeedCompChannel >= 1 && config.VspeedCompChannel <= 16) || config.VspeedCompChannel == 255)){
         printf("Error in parameters: Vspeed compensation channel must be in range 1...16 or 255\n");
         configIsValid=false;
     }
