@@ -1,4 +1,4 @@
-#include "xgzp6897D.h"
+#include "XGZP6897D.h"
 #include "pico/stdlib.h"
 #include "hardware/i2c.h"
 #include "stdio.h"
@@ -10,6 +10,7 @@
 #include "config.h"
 
 extern CONFIG config;
+extern uint32_t debugFlags;
 extern float actualPressurePa ; // this value is updated when baro1,2 or 3 is installed
 extern float difPressureAirspeedSumPa; // calculate a moving average on x values
 extern uint32_t difPressureAirspeedCount;
@@ -43,6 +44,7 @@ void XGZP::begin() {
     }
     prevReadUs = microsRp();
     airspeedInstalled = true; // at this point all is OK.
+    temperatureKelvin = 273.0 + 20 ;
 }    
     
 
@@ -57,7 +59,7 @@ void XGZP::getDifPressure() {
     prevReadUs = now;
     uint8_t writeCmd[1];
     writeCmd[0] = XGZP_PRESSURE_REGISTER ;  
-    if (i2c_write_timeout_us (i2c1 , _address, &writeCmd[0] , 2 , false, 1000) <0 ) {
+    if (i2c_write_timeout_us (i2c1 , _address, &writeCmd[0] , 1 , false, 1000) <0 ) {
         printf("error writing a cmd to XGZP (airspeed sensor)\n");
         return; // no action when i2c error
     }
@@ -70,6 +72,8 @@ void XGZP::getDifPressure() {
     // no I2C error in reading the pressure
     int32_t difPressureAdc; 
     difPressureAdc =  (readBuffer[0] << 16) + (readBuffer[1] << 8 ) + (readBuffer[2])  ;  
+    if (difPressureAdc > 8388608)
+        difPressureAdc = difPressureAdc - 16777216 ; // convert negative in 24 bits to 32 bits
     if ( calibrated == false) {
         calibrateCount++ ;
         if (calibrateCount == 64 ) { // after 256 reading , we can calculate the offset 
@@ -83,6 +87,15 @@ void XGZP::getDifPressure() {
         difPressurePa = (((float) difPressureAdc) - offset) / XGZP_K_FACTOR ;
         difPressureAirspeedSumPa += difPressurePa; // calculate a moving average on x values
         difPressureAirspeedCount++;                // count the number of conversion
+        if ((debugFlags & (1 << DEBUG_XGZP)) && msgEverySec(1)) {
+            float debugAirspeedCmS = 0.0f;
+            if (actualPressurePa > 1000.0f) {
+                float speedAbs = 2396.0f * sqrtf(fabsf(difPressurePa) * temperatureKelvin / actualPressurePa);
+                debugAirspeedCmS = (difPressurePa < 0.0f) ? -speedAbs : speedAbs;
+            }
+            printf("rawPres=%i  pa=%f  speed=%d cm/s  sumPa=%f  count=%i\n",
+                difPressureAdc, difPressurePa, (int)debugAirspeedCmS, difPressureAirspeedSumPa, difPressureAirspeedCount);
+        }
         difPressureCompVspeedSumPa += difPressurePa; // calculate a moving average on x values
         difPressureCompVspeedCount++;                // count the number of conversion
                         

@@ -180,14 +180,21 @@ void calculateAirspeed(){
         rawAirspeedPa = 2396 *  sqrt( difPressureAvg * temperatureKelvin / (float) actualPressurePa );
     }
     #define EXPOSMOOTH_AIRSPEED_FACTOR 0.1
+    #define AIRSPEED_DEADBAND_CMS 200.0f // clamp small residual offset/noise around zero
     smoothAirspeedCmS += ( EXPOSMOOTH_AIRSPEED_FACTOR * ( rawAirspeedPa - smoothAirspeedCmS )) ; 
     // publish the new value every 200 ms
     if ( (millisRp() - prevAirspeedAvailableMs) > 200) { // make the new value available once per 200 msec
         //printf("difP= %f tmp=%f p=%f rs=%f  ss=%f\n" , (float) difPressureAvg , (float)  temperatureKelvin ,
         //     (float) actualPressurePa , (float) rawAirspeedPa , (float) smoothAirspeedCmS *0.036 );
         prevAirspeedAvailableMs = millisRp();
-        //if ( smoothAirSpeedCmS >  0) {  // normally send only if positive and greater than 300 cm/sec , otherwise send 0 but for test we keep all values to check for drift  
-        sent2Core0(AIRSPEED, (int32_t) smoothAirspeedCmS);     
+        int32_t airspeedOut = (int32_t) smoothAirspeedCmS;
+        if (fabsf(smoothAirspeedCmS) < AIRSPEED_DEADBAND_CMS) {
+            airspeedOut = 0;
+        }
+        if (airspeedOut < 0) {
+            airspeedOut = 0;
+        }
+        sent2Core0(AIRSPEED, airspeedOut);
     }
 } 
 // check if offset must be reset
@@ -198,13 +205,13 @@ void calculateAirspeed(){
 
 int32_t posFieldValues[] = {    
     891234567L, //  LATITUDE ,  //  GPS special format
-    1781234567L, //  LONGITUDE =     //  GPS special format
+    1782134567L, //  LONGITUDE =     //  GPS special format
     2468,        //GROUNDSPEED =  //  GPS cm/s
     17912,      //  HEADING =,      //  GPS 0.01 degree
     135721,     //  ALTITUDE ,    //  GPS cm
     23,         //  NUMSAT ,      //  5 GPS no unit   
-    0X170410FF,  //  GPS_DATE ,    // GPS special format AAMMJJFF
-    0X22133100,  //  GPS_TIME ,    // GPS special format HHMMSS00
+    0X180410FF,  //  GPS_DATE ,    // GPS special format AAMMJJFF = value for 24 04 16
+    0X160D1F00,  //  GPS_TIME ,    // GPS special format HHMMSS00 = value for 22:13:31
     123,         //  GPS_PDOP ,    // GPS no unit
     179,         //  GPS_HOME_BEARING, // GPS degree
 
@@ -259,8 +266,8 @@ int32_t negFieldValues[] = {
     -17912,      //  HEADING =,      //  GPS 0.01 degree
     -56721,     //  ALTITUDE ,    //  GPS cm
     0,         //  NUMSAT ,      //  5 GPS no unit   
-    0X170410FF,  //  GPS_DATE ,    // GPS special format AAMMJJFF
-    0X22133100,  //  GPS_TIME ,    // GPS special format HHMMSS00
+    0X180410FF,  //  GPS_DATE ,    // GPS special format AAMMJJFF = value for 24 04 16
+    0X160D1F00,  //  GPS_TIME ,    // GPS special format HHMMSS00 = value for 22:13:31
     03,         //  GPS_PDOP ,    // GPS no unit
     -179,         //  GPS_HOME_BEARING, // GPS degree
 
@@ -308,17 +315,30 @@ int32_t negFieldValues[] = {
         
 };
 // fill all fields with dummy values (useful to test a protocol)
- void fillFields( uint8_t forcedFields){
+static uint32_t lastDebugGpsAvailable = 0;
+                
+void fillFields( uint8_t forcedFields){
     //printf("entering fillFields wi,th %d\n", forcedFields);
     if (forcedFields == 1)  {   // force positive values
+        #define DEDBUG_GPS_EXBUS
+        #ifdef DEDBUG_GPS_EXBUS
+        if ((millisRp() - lastDebugGpsAvailable) > 100){
+            lastDebugGpsAvailable = millisRp();
+            for (uint8_t i = 0; i <  (sizeof(posFieldValues)/sizeof(*posFieldValues)) ; i++){
+                if ((i<=5) or (i==36)) {        
+                    fields[i].value = posFieldValues[i];
+                    fields[i].available = true;
+                    fields[i].onceAvailable = true;
+                }    
+            }
+        }
+        #else
         for (uint8_t i = 0; i <  (sizeof(posFieldValues)/sizeof(*posFieldValues)) ; i++){
-        //for (uint8_t i = 0; i <  6 ; i++){
-        
             fields[i].value = posFieldValues[i];
             fields[i].available = true;
             fields[i].onceAvailable = true;
-            //printf("filling for %d\n", i);
         }
+        #endif
     }
     if (forcedFields == 2)  {   // force negative values
         for (uint8_t i = 0; i <  (sizeof(negFieldValues)/sizeof(*negFieldValues)) ; i++){
@@ -327,7 +347,7 @@ int32_t negFieldValues[] = {
             fields[i].onceAvailable = true; 
         }
     }
- }
+}
 
 uint16_t swapBinary(uint16_t value) {
     return (value >> 8) | (value << 8);

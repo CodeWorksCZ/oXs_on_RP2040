@@ -1,3 +1,19 @@
+# == DO NOT EDIT THE FOLLOWING LINES for the Raspberry Pi Pico VS Code Extension to work ==
+if(WIN32)
+    set(USERHOME $ENV{USERPROFILE})
+else()
+    set(USERHOME $ENV{HOME})
+endif()
+set(sdkVersion 2.1.0)
+set(toolchainVersion 13_3_Rel1)
+set(picotoolVersion 2.1.0)
+set(picoVscode ${USERHOME}/.pico-sdk/cmake/pico-vscode.cmake)
+if (EXISTS ${picoVscode})
+    include(${picoVscode})
+endif()
+# ====================================================================================
+set(PICO_BOARD pico CACHE STRING "Board type")
+
 
 cmake_minimum_required(VERSION 3.13)
 
@@ -29,7 +45,7 @@ pico_generate_pio_header(oXs  ${CMAKE_CURRENT_LIST_DIR}/src/uart_srxl2_tx_rx.pio
 pico_generate_pio_header(oXs  ${CMAKE_CURRENT_LIST_DIR}/src/uart_exbus_tx_rx.pio )
 pico_generate_pio_header(oXs  ${CMAKE_CURRENT_LIST_DIR}/src/uart_logger_tx.pio )
 pico_generate_pio_header(oXs  ${CMAKE_CURRENT_LIST_DIR}/src/uart_esc_rx.pio )
-
+pico_generate_pio_header(oXs  ${CMAKE_CURRENT_LIST_DIR}/src/uart_frsky_hub_tx.pio)
 
 file(GLOB oXs_SRC CONFIGURE_DEPENDS "src/*.h" "src/*.cpp")
 
@@ -64,4 +80,4 @@ add_custom_command(TARGET oXs POST_BUILD
 )
 #  ARGS -E copy oXs.uf2 ${CMAKE_SOURCE_DIR} it was with -E   
 # copy the uf2 file to E: drive
-add_custom_command(TARGET oXs POST_BUILD COMMAND ${CMAKE_COMMAND} ARGS -E copy oXs.uf2 E: )
+add_custom_command(TARGET oXs POST_BUILD COMMAND ${CMAKE_COMMAND} ARGS -E copy oXs.uf2 D: )
